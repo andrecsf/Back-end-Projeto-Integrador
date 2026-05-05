@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.logging.Logger;
+
 import com.senac.pi.DTO.SubmissaoDTO;
 import com.senac.pi.entities.Aluno;
 import com.senac.pi.entities.Categoria;
@@ -24,6 +26,8 @@ import jakarta.persistence.EntityNotFoundException;
 
 @Service
 public class SubmissaoService {
+
+    private static final Logger logger = Logger.getLogger(SubmissaoService.class.getName());
 
     @Autowired
     private EmailService emailService;
@@ -129,17 +133,20 @@ public class SubmissaoService {
         alunoRepository.save(aluno);
         submissao = repository.save(submissao);
 
-    String emailAluno = aluno.getEmail(); // certifique-se que Aluno tem getEmail()
-    emailService.enviarEmail(
-        emailAluno,
-        "SGE Senac - Certificado Aprovado ✅",
-        "Olá, " + aluno.getNome() + "!\n\n" +
-        "Seu certificado referente à atividade foi APROVADO.\n" +
-        "Horas computadas: " + submissao.getHorasAproveitadas() + "h\n\n" +
-        "Acesse o sistema para ver seu progresso.\n\n" +
-        "SGE Senac"
-    );
-        
+        try {
+            emailService.enviarEmail(
+                aluno.getEmail(),
+                "SGE Senac - Certificado Aprovado ✅",
+                "Olá, " + aluno.getNome() + "!\n\n" +
+                "Seu certificado referente à atividade foi APROVADO.\n" +
+                "Horas computadas: " + submissao.getHorasAproveitadas() + "h\n\n" +
+                "Acesse o sistema para ver seu progresso.\n\n" +
+                "SGE Senac"
+            );
+        } catch (Exception e) {
+            logger.warning("Falha ao enviar e-mail de aprovação para " + aluno.getEmail() + ": " + e.getMessage());
+        }
+
         return new SubmissaoDTO(submissao);
     }
 
@@ -153,17 +160,21 @@ public class SubmissaoService {
         
         submissao = repository.save(submissao);
 
-    Aluno aluno = submissao.getAluno();
-    emailService.enviarEmail(
-        aluno.getEmail(),
-        "SGE Senac - Certificado Reprovado ❌",
-        "Olá, " + aluno.getNome() + "!\n\n" +
-        "Infelizmente seu certificado foi REPROVADO.\n\n" +
-        "Motivo: " + observacao + "\n\n" +
-        "Em caso de dúvidas, entre em contato com seu coordenador.\n\n" +
-        "SGE Senac"
-    );
-        
+        Aluno aluno = submissao.getAluno();
+        try {
+            emailService.enviarEmail(
+                aluno.getEmail(),
+                "SGE Senac - Certificado Reprovado ❌",
+                "Olá, " + aluno.getNome() + "!\n\n" +
+                "Infelizmente seu certificado foi REPROVADO.\n\n" +
+                "Motivo: " + observacao + "\n\n" +
+                "Em caso de dúvidas, entre em contato com seu coordenador.\n\n" +
+                "SGE Senac"
+            );
+        } catch (Exception e) {
+            logger.warning("Falha ao enviar e-mail de reprovação para " + aluno.getEmail() + ": " + e.getMessage());
+        }
+
         return new SubmissaoDTO(submissao);
     }
 }
